@@ -1,7 +1,14 @@
 {
   "name": "@repo/db",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "src/generated/prisma/index.js",
+  "types": "src/generated/prisma/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/generated/prisma/index.d.ts",
+      "default": "./src/generated/prisma/index.js"
+    }
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
