@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const jwtsecret = process.env.JWT_SECRET;
+const jwtsecret = process.env.JWT_SECRET || "vatikabahutsundarhai";
 
 if (!jwtsecret) {
   throw new Error("JWT_SECRET not defined");

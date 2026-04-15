@@ -1,3 +1,4 @@
 {
-    "editor.inlineSuggest.suppressSuggestions": true
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "prisma.pinToPrisma6": true
 }

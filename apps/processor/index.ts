@@ -28,10 +28,14 @@ while (true) {
       continue;
     }
 
+    console.log(`processor: publishing ${pendingRows.length} zap run(s) to Kafka`, pendingRows.map((row) => row.zapRunId));
+
     await producer.send({
       topic: TopicName,
       messages: pendingRows.map((row) => ({ value: row.zapRunId })),
     });
+
+    console.log(`processor: published ${pendingRows.length} zap run(s), deleting from outbox`);
 
     await prisma.zapRunOutbox.deleteMany({
       where: { id: { in: pendingRows.map((r) => r.id) } },

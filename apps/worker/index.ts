@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient } from "@repo/db";
 const prisma = new PrismaClient()
 import { Kafka } from "kafkajs";
