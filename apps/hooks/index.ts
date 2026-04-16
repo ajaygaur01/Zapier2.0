@@ -3,9 +3,16 @@ import { Prisma, PrismaClient } from "@repo/db";
 const app = express();
 app.use(express.json());
 const prisma = new PrismaClient();
+import { ratelimiter } from "./middleware/rateLimiter";
+
+const webhookLimiter = ratelimiter({
+  windowSeconds: 60,
+  maxRequests: 100,
+  keyPrefix: "webhook"
+});
 
 
-app.post("/hooks/catch/:userId/:zapId", async (req, res) => {
+app.post("/hooks/catch/:userId/:zapId",webhookLimiter ,async (req, res) => {
   const { userId, zapId } = req.params;
   const body = req.body;
 
