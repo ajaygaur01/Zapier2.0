@@ -32,7 +32,13 @@ while (true) {
 
     await producer.send({
       topic: TopicName,
-      messages: pendingRows.map((row) => ({ value: row.zapRunId })),
+      messages: pendingRows.map((row) => ({ 
+
+        value: JSON.stringify({
+          zapRunId: row.zapRunId,
+          retryCount: 0
+        })
+      })),
     });
 
     console.log(`processor: published ${pendingRows.length} zap run(s), deleting from outbox`);

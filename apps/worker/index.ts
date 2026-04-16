@@ -2,16 +2,14 @@ import "dotenv/config";
 import { PrismaClient } from "@repo/db";
 const prisma = new PrismaClient()
 import { Kafka } from "kafkajs";
-import { sendSol } from "./actions/solana";
-import { sendEmail } from "./actions/email";
-import { sendSlackMessage } from "./actions/slack";
-import {parse} from "./actions/parser"
+import { processZaprun } from "./processzap";
 const TOPIC_NAME = "zap-events"
 const kafka = new Kafka({
     clientId: "worker",
     brokers:["localhost:9092"]
 })
-
+const DLQ_TOPIC_NAME = "zap-events-dlq";
+const MAX_RETRIES = 3;
 
 async function main() {
 const consumer  = kafka.consumer({groupId:"main-worker"})
@@ -19,104 +17,96 @@ await consumer.connect()
 await consumer.subscribe({topic:TOPIC_NAME , fromBeginning:true})
 
 
+//this producer is for dlq (dead letter queue) to reprocess failed messages later
+const producer = kafka.producer();
+await producer.connect();
+
 await consumer.run({
     autoCommit:false,
     eachMessage: async({topic , partition , message}) => {
-    // Step 1 - get zapRunId from kafka message
-        const zapRunId = message.value?.toString()
-        console.log("Received zapRunId:", zapRunId);
+        const raw = message.value?.toString();
+        const offset = (parseInt(message.offset) + 1).toString();
+
+        if(!raw){
+            console.warn("Received empty message, skipping and committing offset");
+            await consumer.commitOffsets([{ topic, partition, offset }]);
+            return;
+        }
+        let parsed;
+        try{
+            parsed = JSON.parse(raw);
+        }catch(err){
+            console.error("Failed to parse message value as JSON:", raw);
+            await producer.send({
+                topic: DLQ_TOPIC_NAME,
+                messages: [{
+                    value: JSON.stringify({
+                        raw,
+                        error: "Invalid JSON",
+                        timestamp: new Date().toISOString(),
+                    })
+                }]
+            });
+            await consumer.commitOffsets([{ topic, partition, offset }]);
+            return;
+        }
+
+        const { zapRunId, retryCount = 0 } = parsed;
+        console.log("Received zapRunId:", zapRunId, "retryCount:", retryCount);
 
         if (!zapRunId) {
-            console.warn("Empty message, skipping");
+            console.warn("Empty zapRunId in message, moving to DLQ and committing offset");
+            await producer.send({
+                topic: DLQ_TOPIC_NAME,
+                messages: [{
+                    value: JSON.stringify({
+                        raw: parsed,
+                        error: "Missing zapRunId",
+                        timestamp: new Date().toISOString(),
+                    })
+                }]
+            });
+            await consumer.commitOffsets([{ topic, partition, offset }]);
             return;
         }
 
-    // Step 2 - fetch ZapRun from DB (has webhook payload)
-        const zapRun = await prisma.zapRun.findUnique({
-            where: {id: zapRunId},
-            include:{
-                zap:{
-                    include:{
-                        actions:{
-                            include: {type:true},// get action type name
-                            orderBy: {sortingOrder: "asc"}  // order matters!
-                        }
-                    }
-                }
+
+        try {
+            await processZaprun(zapRunId);
+            await consumer.commitOffsets([{ topic, partition, offset }]);
+            console.log("Done processing zapRunId:", zapRunId);
+        } catch (error: any) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error("Processing failed for zapRunId:", zapRunId, errorMessage);
+
+            if (retryCount < MAX_RETRIES) {
+                console.log(`Retrying zapRunId ${zapRunId} with retryCount=${retryCount + 1}`);
+                await producer.send({
+                    topic: TOPIC_NAME,
+                    messages: [{
+                        value: JSON.stringify({
+                            zapRunId,
+                            retryCount: retryCount + 1,
+                        })
+                    }]
+                });
+                await consumer.commitOffsets([{ topic, partition, offset }]);
+            } else {
+                console.log("Max retries reached → sending to DLQ for zapRunId:", zapRunId);
+                await producer.send({
+                    topic: DLQ_TOPIC_NAME,
+                    messages: [{
+                        value: JSON.stringify({
+                            zapRunId,
+                            retryCount,
+                            error: errorMessage,
+                            timestamp: new Date().toISOString(),
+                        })
+                    }]
+                });
+                await consumer.commitOffsets([{ topic, partition, offset }]);
             }
-        })
-
-        if (!zapRun) {
-            console.error("ZapRun not found:", zapRunId);
-            return;
         }
-        // Step 3 - this is the webhook payload
-        // { "name": "John", "email": "john@gmail.com", "amount": "0.5" }
-        const triggerPayload = zapRun.metadata;
-
-        console.log("trigger payload:", triggerPayload);
-        console.log("actions to run:", zapRun.zap.actions.length);
-
-
-       // Step 4 - run each action in order
-
-
-
-       for(const action of zapRun.zap.actions) {
-        const actionType  = action.type.name
-        const metadata = (action.Metadata ?? {}) as any
-
-        console.log(`Running action: ${actionType} (order: ${action.sortingOrder})`);
-        
-        if (actionType === "Email") {
-            if (typeof metadata.to !== "string" || typeof metadata.body !== "string") {
-                console.error("Invalid/missing metadata for Email action:", metadata);
-                continue;
-            }
-            // resolve templates
-            // metadata.to might be "{trigger.email}"
-            const to = parse(metadata.to, { trigger: triggerPayload });
-            const body = parse(metadata.body, { trigger: triggerPayload });
-
-            console.log("Sending email to:", to);
-            await sendEmail(to, body);
-        }
-
-        if (actionType === "Solana") {
-            if (typeof metadata.to !== "string" || typeof metadata.amount !== "string") {
-                console.error("Invalid/missing metadata for Solana action:", metadata);
-                continue;
-            }
-            // resolve templates
-            const to = parse(metadata.to, { trigger: triggerPayload });
-            const amount = parse(metadata.amount, { trigger: triggerPayload });
-
-            console.log("Sending SOL to:", to, "amount:", amount);
-            await sendSol(to, amount);
-        }
-
-        if (actionType === "Slack") {
-            if (typeof metadata.channel !== "string" || typeof metadata.message !== "string") {
-                console.error("Invalid/missing metadata for Slack action:", metadata);
-                continue;
-            }
-            // resolve templates
-            const channel = parse(metadata.channel, { trigger: triggerPayload });
-            const message = parse(metadata.message, { trigger: triggerPayload });
-
-            console.log("Sending Slack message to:", channel);
-            await sendSlackMessage(channel, message);
-        }
-       }
-
-    // Step 5 - commit offset (tell Kafka we processed this message)
-    await consumer.commitOffsets([{
-        topic,
-        partition,
-        offset: (parseInt(message.offset) + 1).toString()
-    }])
-    console.log("Done processing zapRunId:", zapRunId);
-
     }
 })
 }

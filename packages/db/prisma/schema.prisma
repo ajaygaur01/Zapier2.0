@@ -70,10 +70,11 @@ model AvailableActions {
 
 
 model ZapRun {
-  id           String        @id @default(uuid())
+  id           String   @id @default(uuid())
   metadata     Json
   zapId        String
-  zap          Zap           @relation(fields: [zapId], references: [id])
+  status       String   @default("PENDING") // NEW
+  zap          Zap      @relation(fields: [zapId], references: [id])
   zapRunOutbox ZapRunOutbox?
 }
 
