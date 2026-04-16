@@ -4,6 +4,7 @@ const prisma = new PrismaClient()
 import { Kafka } from "kafkajs";
 import { sendSol } from "./actions/solana";
 import { sendEmail } from "./actions/email";
+import { sendSlackMessage } from "./actions/slack";
 import {parse} from "./actions/parser"
 const TOPIC_NAME = "zap-events"
 const kafka = new Kafka({
@@ -92,6 +93,19 @@ await consumer.run({
 
             console.log("Sending SOL to:", to, "amount:", amount);
             await sendSol(to, amount);
+        }
+
+        if (actionType === "Slack") {
+            if (typeof metadata.channel !== "string" || typeof metadata.message !== "string") {
+                console.error("Invalid/missing metadata for Slack action:", metadata);
+                continue;
+            }
+            // resolve templates
+            const channel = parse(metadata.channel, { trigger: triggerPayload });
+            const message = parse(metadata.message, { trigger: triggerPayload });
+
+            console.log("Sending Slack message to:", channel);
+            await sendSlackMessage(channel, message);
         }
        }
 
