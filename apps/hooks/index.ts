@@ -20,7 +20,7 @@ app.post("/hooks/catch/:userId/:zapId",webhookLimiter ,async (req, res) => {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const zapRun = await tx.zapRun.create({
         data: {
-          metadata: body,
+          metadata: typeof body === "object" && body !== null ? body : {},
           zapId,
         },
       });

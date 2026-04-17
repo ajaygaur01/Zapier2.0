@@ -3,8 +3,8 @@ const prisma = new PrismaClient()
 
 
 export const availabletriggers = async(req:any , res:any) => {
-const availabletriggers = await prisma.availableTriggers.findMany({})
-res.json({
-    availabletriggers
-})
-}
+  const availableTriggers = await prisma.availableTriggers.findMany({});
+  res.json({
+    availableTriggers,
+  });
+};

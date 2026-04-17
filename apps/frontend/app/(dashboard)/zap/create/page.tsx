@@ -21,11 +21,11 @@ function useAvailableActionsAndTriggers() {
   useEffect(() => {
     axios
       .get(`${BACKEND_URL}/api/v1/trigger/available`)
-      .then((x) => setAvailableTriggers(x.data.availableTriggers))
+      .then((x) => setAvailableTriggers(x.data.availableTriggers ?? []))
       .catch((err) => console.error("Error fetching triggers:", err));
     axios
       .get(`${BACKEND_URL}/api/v1/action/available`)
-      .then((x) => setAvailableActions(x.data.availableActions))
+      .then((x) => setAvailableActions(x.data.availableActions ?? []))
       .catch((err) => console.error("Error fetching actions:", err));
   }, []);
 
@@ -213,7 +213,7 @@ function TriggerActionModalContent({
   } | null>(null);
 
   if (configStep) {
-    if (configStep.id === "email") {
+    if (configStep.name === "Email") {
       return (
         <EmailSelector
           setMetadata={(metadata) => {
@@ -223,9 +223,19 @@ function TriggerActionModalContent({
         />
       );
     }
-    if (configStep.id === "send-sol") {
+    if (configStep.name === "Solana") {
       return (
         <SolanaSelector
+          setMetadata={(metadata) => {
+            onSelect({ id: configStep.id, name: configStep.name, metadata });
+            onClose();
+          }}
+        />
+      );
+    }
+    if (configStep.name === "Slack") {
+      return (
+        <SlackSelector
           setMetadata={(metadata) => {
             onSelect({ id: configStep.id, name: configStep.name, metadata });
             onClose();
@@ -245,7 +255,7 @@ function TriggerActionModalContent({
             if (isTrigger) {
               onSelect({ id, name, metadata: {} });
               onClose();
-            } else if (id === "email" || id === "send-sol") {
+            } else if (name === "Email" || name === "Solana" || name === "Slack") {
               setConfigStep({ id, name });
             } else {
               onSelect({ id, name });
@@ -329,6 +339,41 @@ function SolanaSelector({
         variant="primary"
         size="md"
         onClick={() => setMetadata({ amount, address })}
+      >
+        Submit
+      </Button>
+    </div>
+  );
+}
+
+function SlackSelector({
+  setMetadata,
+}: {
+  setMetadata: (params: { channel: string; message: string }) => void;
+}) {
+  const [channel, setChannel] = useState("");
+  const [message, setMessage] = useState("");
+
+  return (
+    <div className="space-y-4">
+      <Input
+        label="Channel"
+        type="text"
+        placeholder="#channel-name"
+        value={channel}
+        onChange={(e) => setChannel(e.target.value)}
+      />
+      <Input
+        label="Message"
+        type="text"
+        placeholder="Message to send"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      <Button
+        variant="primary"
+        size="md"
+        onClick={() => setMetadata({ channel, message })}
       >
         Submit
       </Button>
