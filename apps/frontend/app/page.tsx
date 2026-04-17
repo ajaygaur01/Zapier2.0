@@ -1,4 +1,11 @@
+"use client";
+
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { Toaster } from "react-hot-toast";
+import { useNotifications } from "../hooks/usenotification";
+import { useAuth } from "../context/AuthContext";  // your existing auth hook
+import { AuthProvider } from "../context/AuthContext";
+
 import {
   HeroSection,
   SocialProofSection,
@@ -13,9 +20,13 @@ import {
   LandingFooter,
 } from "@/components/landing";
 
-export default function Home() {
+function HomeContent() {
+  const { user } = useAuth();
+  useNotifications(user ? String(user.id) : "");
+
   return (
     <MarketingLayout>
+      <Toaster position="top-right" />
       <main>
         <HeroSection />
         <SocialProofSection />
@@ -30,5 +41,13 @@ export default function Home() {
         <LandingFooter />
       </main>
     </MarketingLayout>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <HomeContent />
+    </AuthProvider>
   );
 }

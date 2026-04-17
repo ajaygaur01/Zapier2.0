@@ -6,6 +6,8 @@ import axios from "axios";
 import { BACKEND_URL } from "@/app/config";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
+import { useNotifications } from "@/hooks/usenotification";
+import { NotificationModal } from "@/components/notifications/NotificationModal";
 
 export function DashboardLayout({
   children,
@@ -13,9 +15,12 @@ export function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string | null; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; name: string | null; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const { notifications } = useNotifications(user ? String(user.id) : "");
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -63,6 +68,8 @@ export function DashboardLayout({
       <div className="flex flex-1 flex-col min-w-0">
         <TopNav
           user={user}
+          notificationCount={notifications.length}
+          onNotificationsOpen={() => setNotificationsOpen(true)}
           onLogout={handleLogout}
           onMenuClick={() => setSidebarMobileOpen(true)}
         />
@@ -70,6 +77,12 @@ export function DashboardLayout({
           {children}
         </main>
       </div>
+
+      <NotificationModal
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        notifications={notifications}
+      />
     </div>
   );
 }

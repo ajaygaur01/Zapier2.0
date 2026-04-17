@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/Button";
 
 interface TopNavProps {
   user: { name: string | null; email: string } | null;
+  notificationCount?: number;
+  onNotificationsOpen?: () => void;
   onLogout: () => void;
   onMenuClick?: () => void;
 }
 
-export function TopNav({ user, onLogout, onMenuClick }: TopNavProps) {
+export function TopNav({ user, notificationCount, onNotificationsOpen, onLogout, onMenuClick }: TopNavProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -60,6 +62,23 @@ export function TopNav({ user, onLogout, onMenuClick }: TopNavProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {typeof notificationCount === "number" && onNotificationsOpen && (
+          <button
+            type="button"
+            onClick={onNotificationsOpen}
+            className="relative rounded-xl border border-neutral-200 bg-white px-3 py-2 text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50"
+            aria-label="Open notifications"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
+            </svg>
+            {notificationCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-semibold text-white">
+                {notificationCount}
+              </span>
+            )}
+          </button>
+        )}
         {user ? (
           <div className="relative" ref={profileRef}>
             <button
