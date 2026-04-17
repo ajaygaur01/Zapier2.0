@@ -25,7 +25,7 @@ export const signup = async (req: any, res: any) => {
     }
 
     // Create user
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email: username,
         password: password, // ⚠️ should hash
@@ -33,8 +33,19 @@ export const signup = async (req: any, res: any) => {
       },
     });
 
+    if (!JWT_SECRET) {
+      return res.status(500).json({ message: "JWT config missing" });
+    }
+
+    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+
     return res.json({
-      message: "Account created. Please verify email",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
     });
 
   } catch (error) {
@@ -89,7 +100,14 @@ export const signin = async (req: any, res: any) => {
     // Create token
     const token = jwt.sign({ id: userId }, JWT_SECRET);
 
-    return res.json({ token });
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
 
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
@@ -112,6 +130,7 @@ export const getCurrentUser = async (req: any, res: any) => {
         id: parseInt(String(id), 10),
       },
       select: {
+        id: true,
         name: true,
         email: true,
       },
