@@ -3,6 +3,11 @@ import { PrismaClient } from "@repo/db";
 const prisma = new PrismaClient()
 import { Kafka } from "kafkajs";
 import { processZaprun } from "./processzap";
+import Redis from "ioredis"
+const redis = new Redis({
+    host: process.env.REDIS_HOST || "localhost",
+    port: 6379
+});
 const TOPIC_NAME = "zap-events"
 const kafka = new Kafka({
     clientId: "worker",
@@ -73,6 +78,26 @@ await consumer.run({
 
         try {
             await processZaprun(zapRunId);
+            
+            // Fetch the actual zapRun and zap details
+            const zapRun = await prisma.zapRun.findUnique({
+                where: { id: zapRunId },
+                include: { zap: true }
+            });
+            
+            if (zapRun && zapRun.zap) {
+                const userId = zapRun.zap.userId;
+                const zapId = zapRun.zapId;
+                
+                await redis.publish("zap-notification", JSON.stringify({
+                    userId: String(userId),
+                    zapId: zapId,
+                    status: "success",
+                    message: "Your zap is processed successfully",
+                    timestamp: new Date().toISOString()
+                }));
+            }
+            
             await consumer.commitOffsets([{ topic, partition, offset }]);
             console.log("Done processing zapRunId:", zapRunId);
         } catch (error: any) {
