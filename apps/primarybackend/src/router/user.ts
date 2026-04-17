@@ -13,7 +13,7 @@ const router = Router();
 
 router.post("/signup", authLimiter, signup);
 router.post("/signin", authLimiter, signin);
-router.get("/me", authMiddleware, getCurrentUser);
+router.get("/", authMiddleware, getCurrentUser);
 
 export default router;
 

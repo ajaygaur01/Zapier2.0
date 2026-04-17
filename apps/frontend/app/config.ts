@@ -7,4 +7,4 @@ export const BACKEND_URL =
 export const HOOKS_URL =
   typeof process.env.NEXT_PUBLIC_HOOKS_URL === "string" && process.env.NEXT_PUBLIC_HOOKS_URL.trim()
     ? process.env.NEXT_PUBLIC_HOOKS_URL.replace(/\/$/, "")
-    : "http://localhost:3002";
+    : "http://localhost:8000";
