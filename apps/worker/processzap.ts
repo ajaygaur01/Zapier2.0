@@ -41,9 +41,6 @@ export async function processZaprun(zapRunId: string){
 
 
        // Step 4 - run each action in order
-
-
-
        for(const action of zapRun.zap.actions) {
         const actionType  = action.type.name
         const metadata = (action.Metadata ?? {}) as any
