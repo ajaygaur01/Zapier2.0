@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ScheduleModal } from "./ScheduleModal";
 
 interface Zap {
   id: string;
@@ -56,6 +57,8 @@ function useZaps() {
 export default function DashboardPage() {
   const { loading, zaps } = useZaps();
   const router = useRouter();
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [activeZapId, setActiveZapId] = useState<string | null>(null);
 
   return (
     <div className="container-content py-8">
@@ -144,13 +147,25 @@ export default function DashboardPage() {
                       {`${HOOKS_URL}/hooks/catch/1/${z.id}`}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/zap/" + z.id)}
-                      >
-                        Open
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setActiveZapId(z.id);
+                            setScheduleModalOpen(true);
+                          }}
+                        >
+                          Schedule
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push("/zap/" + z.id)}
+                        >
+                          Open
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -159,6 +174,15 @@ export default function DashboardPage() {
           </div>
         </Card>
       )}
+
+      <ScheduleModal
+        isOpen={scheduleModalOpen}
+        onClose={() => {
+          setScheduleModalOpen(false);
+          setActiveZapId(null);
+        }}
+        zapId={activeZapId}
+      />
     </div>
   );
 }
