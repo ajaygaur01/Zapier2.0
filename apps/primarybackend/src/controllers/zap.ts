@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@repo/db";
 const prisma = new PrismaClient();
+import parser from "cron-parser";
 
 export const createZap = async (req: any, res: any) => {
   try {
@@ -177,3 +178,99 @@ export const getZapById = async (req: any, res: any) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// CREATE scheduled trigger for a zap
+export const createScheduledZap = async (req: any, res: any) => {
+    try {
+        const zapId = req.params.zapId;
+        const { cronExpression } = req.body;
+        const id = req.id;
+
+        if (!id) return res.status(403).json({ message: "Unauthorized" });
+        const userId = parseInt(String(id), 10);
+        if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+
+        const zap = await prisma.zap.findFirst({
+            where: { id: zapId, userId }
+        });
+
+        if (!zap) return res.status(403).json({ message: "Unauthorized" });
+
+        try {
+            parser.parse(cronExpression);
+        } catch (error) {
+            return res.status(400).json({ message: "Invalid cron expression" });
+        }
+
+        const interval = parser.parse(cronExpression, { currentDate: new Date() });
+        const nextRunAt = interval.next().toDate();
+
+        const scheduled = await prisma.scheduledTrigger.create({
+            data: {
+                zapId,
+                cronExpression,
+                nextRunAt,
+            }
+        });
+
+        return res.json({ scheduled });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// DELETE - stop a scheduled trigger
+export const deleteScheduledZap = async (req: any, res: any) => {
+    try {
+        const zapId = req.params.zapId;
+        const id = req.id;
+
+        if (!id) return res.status(403).json({ message: "Unauthorized" });
+        const userId = parseInt(String(id), 10);
+
+        const zap = await prisma.zap.findFirst({
+            where: { id: zapId, userId }
+        });
+
+        if (!zap) return res.status(403).json({ message: "Unauthorized" });
+
+        await prisma.scheduledTrigger.update({
+            where: { zapId },
+            data: { isActive: false }
+        });
+
+        return res.json({ message: "Schedule cancelled" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// GET - see schedule for a zap
+export const getScheduledZap = async (req: any, res: any) => {
+    try {
+        const zapId = req.params.zapId;
+        const id = req.id;
+
+        if (!id) return res.status(403).json({ message: "Unauthorized" });
+        const userId = parseInt(String(id), 10);
+
+        const zap = await prisma.zap.findFirst({
+            where: { id: zapId, userId }
+        });
+
+        if (!zap) return res.status(403).json({ message: "Unauthorized" });
+
+        const schedule = await prisma.scheduledTrigger.findUnique({
+            where: { zapId }
+        });
+
+        return res.json({ schedule });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
