@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a Zapier-like automation platform using a microservices architecture with event-driven communication. The system allows users to create automated workflows (Zaps) that connect triggers to actions, enabling automation across different services and platforms.
+This project implements a Zapier-like automation platform using an advanced microservices architecture with asynchronous, event-driven communication. The system allows users to create automated workflows (Zaps) that connect events (Webhooks, Schedules) to actions across disparate integrations while maintaining strict reliability.
 
 ## System Architecture
 
@@ -19,64 +19,49 @@ This project implements a Zapier-like automation platform using a microservices 
 ┌──────▼──────────────┐      ┌──────┴──────────────┐
 │ Primary Backend     │      │ Notification Service│
 │ (Port 3000)         │      │ (Port 9000)         │
-│ - User Management   │      │ - WebSockets        │
-│ - Zap CRUD          │      │ - Pub/Sub Consumer  │
-│ - Authentication    │      └──────▲──────────────┘
-└──────┬──────────────┘             │
-       │                            │ Redis Pub/Sub (zap-notification channel)
-       │ PostgreSQL                 │
+│ - User Mgt/Zaps     │      │ - WebSockets        │
+│ - Schedule APIs     │      │ - Pub/Sub Consumer  │
+└──────┬──────────────┘      └──────▲──────────────┘
+       │                            │ Redis Pub/Sub
+       │ PostgreSQL                 │ (zap-notification)
        │                            │
-┌──────▼──────────────┐             │
-│   PostgreSQL DB     │             │
-│  - Users            │             │
-│  - Zaps             │             │
-│  - Triggers         │             │
-│  - Actions          │             │
-│  - ZapRuns          │             │
-│  - ZapRunOutbox     │             │
-└─────────────────────┘             │
-                                    │
-┌─────────────┐                     │
-│   Hooks     │ (Express.js)        │
-│ (Port 8000) │                     │
-│ - Webhook   │                     │
-│   Receiver  │                     │
-└──────┬──────┘                     │
-       │                            │
-       │ Writes to DB               │
-       │                            │
-┌──────▼──────────────┐             │
-│   PostgreSQL DB     │             │
-│  (ZapRunOutbox)     │             │
-└─────────────────────┘             │
-                                    │
-┌─────────────┐                     │
-│  Processor  │ (Kafka Producer)    │
-│             │                     │
-│ - Polls     │                     │
-│   Outbox    │                     │
-│ - Publishes │                     │
-│   to Kafka  │                     │
-└──────┬──────┘                     │
-       │                            │
-       │ Kafka Messages             │
-       │                            │
-┌──────▼──────────────────────────┐ │
-│   Kafka Broker                  │ │
-│   - zap-events                  │ │
-│   - zap-events-dlq (DLQ)        │ │
-└──────┬──────────────────────────┘ │
-       │                            │
-       │ Consumes Messages          │
-       │                            │
-┌──────▼──────────────┐             │
-│    Worker           │ (Kafka)     │
-│                     ├─────────────┘
-│ - Consumes Events   │ Publishes Success
-│ - Executes Actions  │ to Redis
-│ - Handles Retries   │
-│ - Routes to DLQ     │
-└─────────────────────┘
+┌──────▼────────────────────────┐   │
+│   PostgreSQL DB               │   │
+│  - Users, Actions, Triggers   │   │
+│  - Zaps, ZapRuns, Outbox      │   │
+│  - ScheduledTrigger           │◄──┼─┐
+└──────┬────────────────────────┘   │ │
+       │                            │ │
+┌──────▼──────┐                     │ │
+│   Hooks     │ (Express.js)        │ │
+│ - Webhooks  │                     │ │
+└──────┬──────┘                     │ │
+       │ Writes to DB               │ │
+       │                            │ │
+┌──────▼──────────────┐             │ │
+│  Processor  │       │             │ │
+│ - Polls Outbox      │             │ │
+│ - Pubs to Kafka     │             │ │
+└──────┬──────────────┘             │ │
+       │ Kafka Messages             │ │
+┌──────▼──────────────────────────┐ │ │
+│   Kafka Broker                  │ │ │
+│   - zap-events                  │ │ │
+│   - zap-events-dlq (DLQ)        │ │ │
+└──────┬──────────────────────────┘ │ │
+       │ Consumes Messages          │ │
+┌──────▼──────────────┐             │ │
+│    Worker           │             │ │
+│ - Executes Actions  ├─────────────┘ │
+│ - Retries / DLQ     │ Publishes Success
+└─────────────────────┘               │
+                                      │
+┌─────────────────────────────────┐   │
+│       Scheduler Service         │   │
+│ - Redis Distributed Locking     │   │
+│ - Polls ScheduledTrigger DB     ├───┘ Writes to Outbox
+│ - Evaluates Cron Expressions    │
+└─────────────────────────────────┘
 ```
 
 ## Components
@@ -84,112 +69,89 @@ This project implements a Zapier-like automation platform using a microservices 
 ### 1. Frontend (Next.js)
 
 **Location:** `apps/frontend/`
-**Purpose:** User interface for creating and managing Zaps.
-
-**Key Features:**
-- User authentication (signup/signin)
-- Zap creation and management dashboard
-- Trigger and action selection UI
-- Real-time Zap status notifications via WebSockets.
-
-**Technology Stack:**
-- Next.js 14, React 18, Tailwind CSS
-- WebSockets for real-time connection to the Notification Service
+* Acts as the face of the platform. Gives users a visual flow editor to map workflows, triggers, actions, and custom cron-based schedules.
+* Maintains real-time situational awareness by persisting a constant WebSocket connection for notifications.
 
 ### 2. Primary Backend (Express.js)
 
 **Location:** `apps/primarybackend/`
-**Purpose:** Main API server handling user management, authentication, and Zap CRUD operations.
-
-**Technology Stack:**
-- Express.js, Prisma ORM, PostgreSQL, JWT for authentication, Zod for validation
+* Headless API driving the frontend.
+* Exposes standard routes `/api/v1/zap` and native schedule controllers.
+* Handles CRUD generation for DB models and safeguards routes with generic JWT `authMiddleware`.
 
 ### 3. Hooks Service
 
 **Location:** `apps/hooks/`
-**Purpose:** Receives webhook events from external services and triggers Zap executions.
-
-**Key Responsibilities:**
-- Receive webhook POST requests.
-- Rate limits incoming requests using Redis.
-- Create `ZapRun` and `ZapRunOutbox` entries consistently using database transactions.
+* Ingestion engine for webhooks heavily defended by Redis-backed sliding window rate limiters.
+* Directly persists data payload via `ZapRunOutbox` and `ZapRun` transactional queries guaranteeing data preservation.
 
 ### 4. Processor Service
 
 **Location:** `apps/processor/`
-**Purpose:** Implements the Transactional Outbox Pattern - polls the database for pending ZapRunOutbox entries and publishes them to Kafka.
-
-**Flow:**
-1. Continuously polls `ZapRunOutbox` table.
-2. Publishes each ZapRun ID to the Kafka topic `zap-events`.
-3. Deletes processed outbox entries.
+* Implements the **Transactional Outbox Pattern** against PostgreSQL.
+* Loops dynamically, moving tasks from the strict persistence layer onto the unbounded Kafka queues.
 
 ### 5. Worker Service
 
 **Location:** `apps/worker/`
-**Purpose:** Consumes Kafka messages, executes Zap actions, and handles failures via retries and DLQ.
-
-**Key Responsibilities:**
-- Consume messages from Kafka topic `zap-events`.
-- Manage Retry Logic (`MAX_RETRIES = 3`).
-- Send messages to `zap-events-dlq` upon complete failure.
-- Publish success events to Redis for real-time notifications.
+* The heavy lifter pulling operations off Kafka.
+* Triggers discrete external modules seamlessly.
+* Governs the `MAX_RETRIES` loops, pushing doomed tasks into `zap-events-dlq` and shooting explicit "Success" flags into the Notification Service via Redis.
 
 ### 6. Notification Service
 
 **Location:** `apps/services/notification-service/`
-**Purpose:** Relays real-time notifications to the frontend when a Zap finishes successfully.
+* Pure WebSocket (WS) gateway bound exclusively mapping specific `userId`s to active TCP socket handlers.
+* Decouples the Next.js runtime from PostgreSQL polling by simply waiting for transient Redis Pub/Sub pulses alerting the user interfaces directly.
 
-**Key Responsibilities:**
-- Host a WebSocket server on port 9000.
-- Map connected WebSockets to `userId`s securely.
-- Subscribe to the Redis Pub/Sub channel `zap-notification`.
-- Forward notifications to specific connected clients.
+### 7. Scheduler Service (NEW)
 
-### 7. Database (PostgreSQL & Redis)
+**Location:** `apps/scheduler/`
+* Native autonomous daemon processing time-bound functions decoupled from the active REST requests using pure JavaScript event loops.
+* **Responsibilities:**
+  - Evaluates mathematical `cronExpression` fields locally using `cron-parser`.
+  - Determines if `nextRunAt` timestamps have elapsed against the real-time Unix clock. 
+  - Submits delayed operations securely using the identical Outbox strategy the Hook Engine uses so scheduling scales properly on top of standard Kafka event flows.
 
-**Shared across services.**
+### 8. Database (PostgreSQL & Redis)
 
-**Schema Overview:**
-- `User`, `Zap`, `Trigger`, `Action`, `AvailableTriggers`, `AvailableActions`
-- `ZapRun`: The instance of a triggered Zap. Includes a `status` field.
-- `ZapRunOutbox`: Implements outbox pattern to ensure reliability between hooks and Kafka.
+**Schema Additions:**
+* Added `ScheduledTrigger` tied via `zapId` managing execution boolean (`isActive`) against temporal boundaries (`nextRunAt`, `lastRunAt`). Indexed thoroughly for performance scaling.
 
 ---
 
 ## Technical Deep Dives
 
+### Autonomous Distributed Scheduler Pattern
+
+To handle massive-scale temporal execution securely, our node instances implement a strict state-loop bound heavily to a caching layer.
+
+**Workflow:**
+1. **Poll Generation:** The Scheduler loop is triggered constantly over a specific bounded interval.
+2. **Distributed Redis Locks:** Before moving a muscle, it uses `ioredis` to attempt an atomic lock condition using Redis `NX` (Not Exists) argument with an Expiration TTL.
+   - If `NX` fails to bind, the environment assumes another scaled pod is dealing with the payload and deliberately suspends itself.
+3. **Execution Identification:** Upon catching the Redis lock, it asks Prisma to reveal any models in `ScheduledTrigger` where `nextRunAt <= now()`.
+4. **Outbox Handoff:** For every trigger needing launch, it forces a safe atomic `prisma.$transaction`. Within this:
+   - Sets a fresh `ZapRun` instance tagged natively with scheduler specifics.
+   - Adds a payload into `ZapRunOutbox`.
+   - Modifies `ScheduledTrigger.nextRunAt` utilizing `cron-parser` to figure out the delta required until the exact next execution constraint.
+5. Due to the outbox insert, the `Processor` and `Worker` organically notice the new run regardless of it being generated mathematically rather than externally driven by a Webhook!
+
 ### Dead Letter Queue (DLQ) and Retry Mechanism
 
 The system implements a robust fault tolerance mechanism using Kafka to handle intermittent errors, bad data, and permanent failures during worker processing.
 
-**Topic Definitions:**
-- Main Topic: `zap-events`
-- DLQ Topic: `zap-events-dlq`
-
 **Workflow:**
-1. **Validation Check:** The worker pulls a message from `zap-events`. If the JSON is completely invalid or missing essential keys (like `zapRunId`), it evaluates it as irrecoverable and sends it immediately to `zap-events-dlq`, then commits the offset.
-2. **Execution and Errors:** The worker tries processing the `zapRunId`. If an error is thrown (e.g., action failed, timeout, external API is down).
+1. **Validation Check:** The worker pulls a message from `zap-events`. Missing keys immediately jump to `zap-events-dlq`.
+2. **Execution and Errors:** Action runs inside extensive error boundary catches.
 3. **Retry Loop:** 
-   - The message payload contains a `retryCount` (defaulting to 0).
-   - If `retryCount < MAX_RETRIES` (which is 3), the worker publishes a *new* copy of the message back to the `zap-events` topic, but this time with `retryCount` incremented by 1. The original message offset is committed so it's not re-read continuously by the same failure loop.
-4. **DLQ Routing:** 
-   - If the `retryCount` limit is met, the system recognizes this as a permanent failure.
-   - The worker packages the `zapRunId`, `retryCount`, the `errorMessage`, and a timestamp into a JSON payload.
-   - It publishes this payload to `zap-events-dlq`. The offset of the original message is committed.
-5. **Observation:** A separate service or site reliability engineer can monitor the `zap-events-dlq` to debug "poison pill" messages without blocking the main event flow.
+   - `retryCount` iterates linearly against `MAX_RETRIES` (3). Assuming it fails initially, it publishes cloned messages natively wrapped back onto the primary pipe, committing the old Kafka offset intelligently.
+4. **DLQ Context Dump:** If retries completely shatter, the runtime dumps heavy context tracking metadata (Errors, Run IDs, Iterations) straight onto the isolated `zap-events-dlq` topic allowing heavy monitoring/intervention without impacting downstream tasks.
 
 ### Real-Time Notification System
 
-The application ensures users immediately know the outcome of their Zaps through an asynchronous notification flow.
-
 **Workflow:**
-1. **Connection Setup:** 
-   - When the user logs onto the Web app UI, the frontend establishes a persistent WebSocket connection to the Notification Service cluster mapping to their `userId`.
-2. **Success Publication:**
-   - After a Worker completes a ZapRun and updates the Database as successful, it needs a way to decouple from the frontend stack. 
-   - The Worker publishes a stringified JSON payload to deeply integrated cache: Redis inside the `zap-notification` channel with their details.
-3. **Pushed to Client:**
-   - The Notification Service is subscribed to Redis. Upon receiving messages containing `{ userId, zapId, status, message }`, it filters through its in-memory map of `userSockets`.
-   - If the target `userId` has an open socket, it broadcasts the message to the browser natively over WebSocket.
-   - The React frontend receives the WebSocket message and dynamically displays a success toast to the user visually updating the page without a refresh.
+1. Next.js natively dials the NodeWS cluster port on loading the user dashboard.
+2. Back in the void, the `Worker` processes an outbox, eventually ending up with a `success` state. It shoots a lightweight Pub/Sub hit to Redis `zap-notification` queue.
+3. The WebSocket server (subscribed solely to that channel) detects the specific `userId` payload matches an open connection map in its internal runtime heap. 
+4. The React front-end instantaneously updates using raw socket transmission, bypassing complex API round trips, giving users a highly premium live feedback loop.
