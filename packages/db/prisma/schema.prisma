@@ -23,13 +23,14 @@ model User {
 }
 
 model Zap {
-  id        String   @id @default(uuid())
-  userId    Int      @map("user_id")
-  triggerId String?
-  actions   Action[]
-  trigger   Trigger?
-  user      User     @relation(fields: [userId], references: [id])
-  zapRuns   ZapRun[]
+  id               String            @id @default(uuid())
+  userId           Int               @map("user_id")
+  triggerId        String?
+  actions          Action[]
+  trigger          Trigger?
+  user             User              @relation(fields: [userId], references: [id])
+  zapRuns          ZapRun[]
+  scheduledTrigger ScheduledTrigger?
 }
 
 model Trigger {
@@ -52,14 +53,25 @@ model Action {
   zap          Zap              @relation(fields: [zapId], references: [id])
 }
 
-
-model AvailableTriggers { 
+model AvailableTriggers {
   id       String    @id @default(uuid())
   name     String
   image    String
   triggers Trigger[]
 }
 
+model ScheduledTrigger {
+  id             String    @id @default(uuid())
+  zapId          String    @unique
+  cronExpression String
+  lastRunAt      DateTime?
+  nextRunAt      DateTime
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  zap            Zap       @relation(fields: [zapId], references: [id])
+
+  @@index([nextRunAt, isActive])
+}
 
 model AvailableActions {
   id      String   @id @default(uuid())
@@ -68,13 +80,12 @@ model AvailableActions {
   actions Action[]
 }
 
-
 model ZapRun {
-  id           String   @id @default(uuid())
+  id           String        @id @default(uuid())
   metadata     Json
   zapId        String
-  status       String   @default("PENDING") // NEW
-  zap          Zap      @relation(fields: [zapId], references: [id])
+  status       String        @default("PENDING") // NEW
+  zap          Zap           @relation(fields: [zapId], references: [id])
   zapRunOutbox ZapRunOutbox?
 }
 

@@ -16,9 +16,14 @@ wss.on("connection", (ws, req) => {
         try {
             const message = JSON.parse(data.toString());
             if (message.type === "register") {
+                const userId = String(message.userId ?? message.userid ?? message.user ?? "").trim();
+                if (!userId || userId === "undefined" || userId === "null") {
+                    console.warn("Register message missing valid userId, ignoring", message);
+                    return;
+                }
                 // store this socket against userId
-                userSockets.set(message.userId, ws);
-                console.log(`User ${message.userId} registered for notifications`);
+                userSockets.set(userId, ws);
+                console.log(`User ${userId} registered for notifications`);
                 ws.send(JSON.stringify({
                     type: "registered",
                     message: "connected to notification service"
@@ -59,14 +64,15 @@ subscriber.on("message", (channel, message) => {
         const notification = JSON.parse(message);
         // { userId: "1", zapId: "zap-001", status: "success", message: "..." }
         console.log("Notification received:", notification);
-        const userSocket = userSockets.get(String(notification.userId));
+        const userId = String(notification.userId ?? notification.userid ?? notification.user ?? "").trim();
+        const userSocket = userId ? userSockets.get(userId) : undefined;
         if (userSocket && userSocket.readyState === WebSocket.OPEN) {
             // send to their browser
             userSocket.send(JSON.stringify(notification));
-            console.log(`Notification sent to user ${notification.userId}`);
+            console.log(`Notification sent to user ${userId}`);
         }
         else {
-            console.log(`User ${notification.userId} not connected, skipping`);
+            console.log(`User ${userId || "undefined"} not connected, skipping`);
         }
     }
     catch (error) {
