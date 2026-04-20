@@ -61,12 +61,19 @@ export default function DashboardPage() {
   const [activeZapId, setActiveZapId] = useState<string | null>(null);
 
   return (
-    <div className="container-content py-8">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="container-content py-10">
+
+      {/* ── Page Header ─────────────────────────────────── */}
+      <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-display-sm text-neutral-900">My automations</h1>
-          <p className="mt-1 text-body text-neutral-500">
-            Manage and monitor your workflows
+          <p className="mb-1 text-caption font-bold uppercase tracking-widest text-brand-500">
+            Workspace
+          </p>
+          <h1 className="text-display-sm font-bold tracking-tight text-neutral-900">
+            My Automations
+          </h1>
+          <p className="mt-1.5 text-body text-neutral-500 leading-relaxed">
+            Manage and monitor all your active workflows
           </p>
         </div>
         <Button
@@ -74,10 +81,20 @@ export default function DashboardPage() {
           size="lg"
           onClick={() => router.push("/zap/create")}
         >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
           Create automation
         </Button>
       </div>
 
+      {/* ── Content ─────────────────────────────────────── */}
       {loading ? (
         <Card padding="lg">
           <TableSkeleton rows={6} cols={5} />
@@ -92,60 +109,99 @@ export default function DashboardPage() {
           }}
         />
       ) : (
-        <Card padding="none">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_1px_4px_0_rgb(0_0_0_/_0.06),0_0_0_1px_rgb(0_0_0_/_0.03)]">
           <div className="overflow-x-auto">
             <table className="w-full" role="table">
               <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50/80">
-                  <th className="px-6 py-4 text-left text-body-sm font-semibold text-neutral-600">
+                <tr className="border-b border-neutral-200/70 bg-neutral-50/90 backdrop-blur-sm">
+                  <th className="px-6 py-4 text-left text-caption font-bold uppercase tracking-widest text-neutral-400">
                     Workflow
                   </th>
-                  <th className="px-6 py-4 text-left text-body-sm font-semibold text-neutral-600">
+                  <th className="px-6 py-4 text-left text-caption font-bold uppercase tracking-widest text-neutral-400">
                     ID
                   </th>
-                  <th className="px-6 py-4 text-left text-body-sm font-semibold text-neutral-600">
-                    Created
+                  <th className="px-6 py-4 text-left text-caption font-bold uppercase tracking-widest text-neutral-400">
+                    Status
                   </th>
-                  <th className="px-6 py-4 text-left text-body-sm font-semibold text-neutral-600">
+                  <th className="px-6 py-4 text-left text-caption font-bold uppercase tracking-widest text-neutral-400">
                     Webhook URL
                   </th>
-                  <th className="px-6 py-4 text-right text-body-sm font-semibold text-neutral-600">
+                  <th className="px-6 py-4 text-right text-caption font-bold uppercase tracking-widest text-neutral-400">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {zaps.map((z) => (
+                {zaps.map((z, i) => (
                   <tr
                     key={z.id}
-                    className="transition-colors duration-fast hover:bg-neutral-50/50"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    className="group animate-fade-in-up opacity-0 [animation-fill-mode:forwards] transition-colors duration-fast hover:bg-brand-50/40"
                   >
+                    {/* Workflow icons + name */}
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={z.trigger.type.image}
-                          alt=""
-                          className="h-8 w-8 rounded-lg object-cover border border-neutral-200"
-                        />
-                        {z.actions.map((x) => (
-                          <img
-                            key={x.id}
-                            src={x.type.image}
-                            alt=""
-                            className="h-8 w-8 rounded-lg object-cover border border-neutral-200"
-                          />
-                        ))}
+                      <div className="flex items-center gap-3">
+                        <div className="flex -space-x-2.5">
+                          <div className="relative z-10 h-9 w-9 overflow-hidden rounded-xl ring-2 ring-white shadow-soft">
+                            <img
+                              src={z.trigger.type.image}
+                              alt={z.trigger.type.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          {z.actions.map((x, idx) => (
+                            <div
+                              key={x.id}
+                              style={{ zIndex: 9 - idx }}
+                              className="relative h-9 w-9 overflow-hidden rounded-xl ring-2 ring-white shadow-soft"
+                            >
+                              <img
+                                src={x.type.image}
+                                alt={x.type.name}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-body-sm font-semibold text-neutral-800">
+                            {z.trigger.type.name}
+                          </p>
+                          {z.actions.length > 0 && (
+                            <p className="truncate text-caption text-neutral-400">
+                              → {z.actions.map((a) => a.type.name).join(" → ")}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-body text-neutral-700 font-mono text-body-sm">
-                      {z.id.slice(0, 8)}…
+
+                    {/* ID pill */}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center rounded-lg border border-neutral-200/80 bg-neutral-100 px-2.5 py-1 font-mono text-caption text-neutral-500">
+                        {z.id.slice(0, 8)}…
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-body-sm text-neutral-500">
-                      Nov 13, 2023
+
+                    {/* Status badge */}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/60 bg-emerald-50 px-2.5 py-1 text-caption font-semibold text-emerald-700">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                        Active
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-body-sm text-neutral-500 font-mono max-w-[200px] truncate">
-                      {`${HOOKS_URL}/hooks/catch/1/${z.id}`}
+
+                    {/* Webhook URL */}
+                    <td className="max-w-[200px] px-6 py-4">
+                      <span
+                        className="block cursor-default truncate font-mono text-caption text-neutral-400 transition-colors hover:text-neutral-600"
+                        title={`${HOOKS_URL}/hooks/catch/1/${z.id}`}
+                      >
+                        {`${HOOKS_URL}/hooks/catch/1/${z.id}`}
+                      </span>
                     </td>
+
+                    {/* Actions */}
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -156,6 +212,19 @@ export default function DashboardPage() {
                             setScheduleModalOpen(true);
                           }}
                         >
+                          <svg
+                            className="h-3.5 w-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
+                            />
+                          </svg>
                           Schedule
                         </Button>
                         <Button
@@ -164,6 +233,15 @@ export default function DashboardPage() {
                           onClick={() => router.push("/zap/" + z.id)}
                         >
                           Open
+                          <svg
+                            className="h-3.5 w-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
                         </Button>
                       </div>
                     </td>
@@ -172,7 +250,14 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+
+          {/* Table footer */}
+          <div className="border-t border-neutral-100 bg-neutral-50/60 px-6 py-3">
+            <p className="text-caption text-neutral-400">
+              {zaps.length} automation{zaps.length !== 1 ? "s" : ""} total
+            </p>
+          </div>
+        </div>
       )}
 
       <ScheduleModal
