@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         <label
           htmlFor={inputId}
-          className="block text-body-sm font-medium text-neutral-700 mb-1.5"
+          className="block text-body-sm font-semibold text-neutral-700 mb-1.5 tracking-tight"
         >
           {label}
         </label>
@@ -24,14 +24,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full rounded-xl border bg-white px-4 py-2.5 text-body
-            placeholder:text-neutral-400
-            transition-colors duration-fast
-            focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500
-            disabled:bg-neutral-50 disabled:text-neutral-500 disabled:cursor-not-allowed
+            w-full rounded-xl border bg-neutral-50/50 px-4 py-2.5 text-body text-neutral-900
+            placeholder:text-neutral-400/80
+            transition-all duration-normal
+            focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/25 focus:border-brand-400
+            hover:border-neutral-300 hover:bg-white
+            disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed
             ${error
-              ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-              : "border-neutral-200 hover:border-neutral-300"}
+              ? "border-red-300 bg-red-50/30 focus:border-red-400 focus:ring-red-400/25"
+              : "border-neutral-200"}
             ${className}
           `}
           aria-invalid={!!error}
@@ -39,12 +40,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <p id={`${inputId}-error`} className="mt-1.5 text-body-sm text-red-600" role="alert">
+          <p id={`${inputId}-error`} className="mt-1.5 text-body-sm text-red-500 flex items-center gap-1" role="alert">
+            <span className="inline-block w-1 h-1 rounded-full bg-red-500 flex-shrink-0" />
             {error}
           </p>
         )}
         {hint && !error && (
-          <p id={`${inputId}-hint`} className="mt-1.5 text-caption text-neutral-500">
+          <p id={`${inputId}-hint`} className="mt-1.5 text-caption text-neutral-400 leading-relaxed">
             {hint}
           </p>
         )}

@@ -29,22 +29,27 @@ export function TopNav({ user, notificationCount, onNotificationsOpen, onLogout,
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const initials = user ? (user.name || user.email).charAt(0).toUpperCase() : "?";
+
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 px-4 lg:px-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-neutral-200/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85 px-4 lg:px-6">
+      {/* Mobile menu trigger */}
       {onMenuClick && (
         <button
           type="button"
           onClick={onMenuClick}
-          className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-all duration-fast hover:bg-neutral-100 hover:text-neutral-700 lg:hidden active:scale-90"
           aria-label="Open menu"
         >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       )}
+
+      {/* Search */}
       <div className="flex flex-1 items-center gap-4 min-w-0">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-sm">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -52,50 +57,55 @@ export function TopNav({ user, notificationCount, onNotificationsOpen, onLogout,
           </span>
           <input
             type="search"
-            placeholder="Search automations..."
+            placeholder="Search automations…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-neutral-200 bg-neutral-50/80 py-2 pl-9 pr-4 text-body placeholder:text-neutral-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            className="w-full rounded-xl border border-neutral-200 bg-neutral-50/80 py-2 pl-9 pr-4 text-body-sm text-neutral-800 placeholder:text-neutral-400 transition-all duration-normal focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 hover:border-neutral-300"
             aria-label="Search"
           />
         </div>
       </div>
 
+      {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Notifications bell */}
         {typeof notificationCount === "number" && onNotificationsOpen && (
           <button
             type="button"
             onClick={onNotificationsOpen}
-            className="relative rounded-xl border border-neutral-200 bg-white px-3 py-2 text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-50"
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 transition-all duration-fast hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 active:scale-90"
             aria-label="Open notifications"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
             </svg>
             {notificationCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-semibold text-white">
-                {notificationCount}
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-bold leading-none text-white">
+                {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
           </button>
         )}
+
+        {/* Profile dropdown */}
         {user ? (
           <div className="relative" ref={profileRef}>
             <button
               type="button"
               onClick={() => setProfileOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-body hover:bg-neutral-100 transition-colors duration-fast"
+              className="flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-body-sm transition-all duration-fast hover:bg-neutral-100 active:scale-95"
               aria-expanded={profileOpen}
               aria-haspopup="true"
             >
-              <span className="hidden sm:inline text-neutral-700 font-medium">
+              <span className="hidden sm:inline font-medium text-neutral-700">
                 {user.name || user.email}
               </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700 text-body-sm font-medium">
-                {(user.name || user.email).charAt(0).toUpperCase()}
+              {/* Avatar */}
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-brand-400 to-brand-600 text-white text-caption font-bold shadow-[0_1px_3px_0_rgb(99_102_241_/_0.4)]">
+                {initials}
               </span>
               <svg
-                className={`h-4 w-4 text-neutral-400 transition-transform ${profileOpen ? "rotate-180" : ""}`}
+                className={`h-3.5 w-3.5 text-neutral-400 transition-transform duration-fast ${profileOpen ? "rotate-180" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -103,26 +113,33 @@ export function TopNav({ user, notificationCount, onNotificationsOpen, onLogout,
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
+
+            {/* Dropdown menu */}
             {profileOpen && (
               <div
-                className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-neutral-200 bg-white py-2 shadow-soft-lg"
+                className="absolute right-0 top-full mt-1.5 w-56 overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_8px_24px_-4px_rgb(0_0_0_/_0.12),0_0_0_1px_rgb(0_0_0_/_0.04)] animate-modal-in"
                 role="menu"
               >
+                {/* User info */}
                 <div className="border-b border-neutral-100 px-4 py-3">
-                  <p className="text-body font-medium text-neutral-900 truncate">
+                  <p className="text-body-sm font-semibold text-neutral-900 truncate">
                     {user.name || "User"}
                   </p>
-                  <p className="text-body-sm text-neutral-500 truncate">{user.email}</p>
+                  <p className="mt-0.5 text-caption text-neutral-500 truncate">{user.email}</p>
                 </div>
+                {/* Sign out */}
                 <button
                   type="button"
                   onClick={() => {
                     setProfileOpen(false);
                     onLogout();
                   }}
-                  className="w-full px-4 py-2 text-left text-body text-neutral-700 hover:bg-neutral-50"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-body-sm text-neutral-700 transition-colors duration-fast hover:bg-neutral-50 hover:text-neutral-900"
                   role="menuitem"
                 >
+                  <svg className="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                   Sign out
                 </button>
               </div>

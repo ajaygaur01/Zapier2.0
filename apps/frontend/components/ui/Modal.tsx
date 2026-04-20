@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import { Button } from "./Button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -46,30 +45,39 @@ export function Modal({
       aria-modal="true"
       aria-labelledby="modal-title"
     >
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-neutral-900/40 backdrop-blur-[2px] transition-opacity duration-normal"
+        className="absolute inset-0 bg-neutral-900/50 backdrop-blur-[3px] transition-opacity duration-normal"
         onClick={onClose}
         aria-hidden="true"
       />
+
+      {/* Panel */}
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-2xl border border-neutral-200 bg-white shadow-soft-lg animate-modal-in`}
+        className={`relative w-full ${sizeClasses[size]} overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_20px_60px_-15px_rgb(0_0_0_/_0.25),0_0_0_1px_rgb(0_0_0_/_0.04)] animate-modal-in`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-          <h2 id="modal-title" className="text-title text-neutral-900">
+        {/* Thin top highlight */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-300/60 to-transparent" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <h2 id="modal-title" className="text-title font-bold text-neutral-900">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors duration-fast focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-all duration-fast hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500 active:scale-90"
             aria-label="Close modal"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
+
+        {/* Body */}
         <div className="max-h-[70vh] overflow-y-auto p-6">{children}</div>
       </div>
     </div>

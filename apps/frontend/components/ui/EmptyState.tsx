@@ -13,16 +13,16 @@ interface EmptyStateProps {
 
 const defaultIcon = (
   <svg
-    className="w-12 h-12 text-neutral-300"
+    className="w-7 h-7 text-brand-400"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
-    strokeWidth={1}
+    strokeWidth={1.5}
   >
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
-      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+      d="M13 10V3L4 14h7v7l9-11h-7z"
     />
   </svg>
 );
@@ -36,17 +36,37 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/50 py-16 px-8 text-center ${className}`}
+      className={`relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-neutral-200 bg-gradient-to-b from-neutral-50/80 to-white py-20 px-8 text-center ${className}`}
     >
-      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-white border border-neutral-200 mb-6">
+      {/* Subtle background glow */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-30"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 0%, rgb(99 102 241 / 0.12), transparent)",
+        }}
+      />
+
+      {/* Icon container */}
+      <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-100 bg-gradient-to-b from-brand-50 to-white shadow-soft">
         {icon}
       </div>
-      <h3 className="text-title-sm text-neutral-900 mb-2">{title}</h3>
+
+      <h3 className="text-title font-bold text-neutral-900 mb-2">{title}</h3>
       {description && (
-        <p className="text-body text-neutral-500 max-w-sm mb-6">{description}</p>
+        <p className="text-body text-neutral-500 max-w-sm mb-8 leading-relaxed">{description}</p>
       )}
       {action && (
         <Button variant="primary" size="md" onClick={action.onClick}>
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
           {action.label}
         </Button>
       )}
