@@ -45,6 +45,7 @@ const config: Config = {
         "caption": ["0.75rem", { lineHeight: "1.4" }],
       },
       spacing: {
+        "4.5": "1.125rem",
         "18": "4.5rem",
         "22": "5.5rem",
         "30": "7.5rem",
@@ -71,7 +72,8 @@ const config: Config = {
       },
       animation: {
         "float": "float 6s ease-in-out infinite",
-        "fade-in-up": "fade-in-up 0.6s ease-out forwards",
+        "fade-in-up": "fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "shimmer": "shimmer 1.5s infinite",
       },
       keyframes: {
         float: {
@@ -79,8 +81,12 @@ const config: Config = {
           "50%": { transform: "translateY(-8px)" },
         },
         "fade-in-up": {
-          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         },
       },
     },

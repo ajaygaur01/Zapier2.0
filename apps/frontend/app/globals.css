@@ -51,16 +51,16 @@
   @keyframes modal-in {
     from {
       opacity: 0;
-      transform: scale(0.98);
+      transform: scale(0.97) translateY(8px);
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateY(0);
     }
   }
 
   .animate-modal-in {
-    animation: modal-in 0.2s ease-out;
+    animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes slide-in-right {
@@ -74,6 +74,21 @@
 
   .animate-slide-in-right {
     animation: slide-in-right 0.2s ease-out;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -400px 0;
+    }
+    100% {
+      background-position: 400px 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 
   .section-padding {
