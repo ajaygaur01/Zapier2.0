@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: zapier
     ports:
-      - "5435:5432"
+      - "5431:5432"
   redis:                          # ADD THIS
     image: redis:7
     ports:
