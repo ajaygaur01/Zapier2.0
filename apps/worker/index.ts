@@ -6,12 +6,12 @@ import { processZaprun } from "./processzap";
 import Redis from "ioredis"
 const redis = new Redis({
     host: process.env.REDIS_HOST || "localhost",
-    port: 6379
+    port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379
 });
 const TOPIC_NAME = "zap-events"
 const kafka = new Kafka({
     clientId: "worker",
-    brokers:["localhost:9092"]
+    brokers:[process.env.KAFKA_BROKER || "localhost:9092"]
 })
 const DLQ_TOPIC_NAME = "zap-events-dlq";
 const MAX_RETRIES = 3;

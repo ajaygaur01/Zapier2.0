@@ -9,7 +9,7 @@ import {parse} from "./actions/parser"
 const TOPIC_NAME = "zap-events"
 const kafka = new Kafka({
     clientId: "worker",
-    brokers:["localhost:9092"]
+    brokers:[process.env.KAFKA_BROKER || "localhost:9092"]
 })
 export async function processZaprun(zapRunId: string){
 
