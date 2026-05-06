@@ -1,12 +1,12 @@
 import "dotenv/config";
 import Redis from "ioredis"
-import {PrismaClient} from "@repo/db"
-const prisma  = new PrismaClient()
+import { PrismaClient } from "@repo/db"
+const prisma = new PrismaClient()
 import parser from "cron-parser";
 
-const redis  = new Redis({
-    host: "localhost",
-    port:6379
+const redis = new Redis({
+    host: process.env.REDIS_HOST || "localhost",
+    port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379
 })
 // unique ID for this instance
 // when running multiple instances each gets different ID
@@ -21,7 +21,7 @@ console.log(`Scheduler starting with instanceId: ${INSTANCE_ID}`);
 
 //STEP A: Try to grab the Redis lock
 
-async function acquirelock(): Promise <boolean> {
+async function acquirelock(): Promise<boolean> {
 
     const result = await redis.set(
         LOCK_KEY,
@@ -29,20 +29,20 @@ async function acquirelock(): Promise <boolean> {
         "EX",// set Expiry
         LOCK_TTL_SECONDS,
         "NX"// only set if Not eXists
-      );
+    );
 
-// result is "OK" if we got the lock
-// result is null if someone else has it
+    // result is "OK" if we got the lock
+    // result is null if someone else has it
     return result === "OK";
 }
 // STEP B: Calculate next run time from cron
 
 function getNextRunTime(cronExpression: string): Date {
     const interval = parser.parse(cronExpression, {
-      currentDate: new Date(),
+        currentDate: new Date(),
     });
     return interval.next().toDate();
-  }
+}
 // STEP C: Main processing function  
 async function processScheduledTriggers() {
     console.log(`[${INSTANCE_ID}] Checking for scheduled triggers...`);
