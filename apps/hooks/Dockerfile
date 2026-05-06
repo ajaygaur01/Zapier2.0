@@ -1,23 +1,30 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
+
+# Install OpenSSL for Prisma detection during generate
+RUN apt-get update -y && apt-get install -y openssl ca-certificates
+
 COPY package.json package-lock.json* ./
 COPY packages ./packages
 COPY apps/hooks ./apps/hooks
+
 RUN npm install
 RUN cd packages/db && npm run db:generate
 RUN cd apps/hooks && npm run build
-FROM node:20-alpine
+
+# --- Production Image ---
+FROM node:20-slim
 WORKDIR /app
 
-# 6. Copy root node_modules and packages (needed for @repo/db to work)
+# Install OpenSSL for Prisma runtime
+RUN apt-get update -y && apt-get install -y openssl ca-certificates
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 
-# 7. Copy the built hooks app
 COPY --from=builder /app/apps/hooks/package*.json ./apps/hooks/
 COPY --from=builder /app/apps/hooks/dist ./apps/hooks/dist
 
-# 8. Run the app from inside its folder
 WORKDIR /app/apps/hooks
 EXPOSE 8000
 CMD ["npm", "run", "start"]

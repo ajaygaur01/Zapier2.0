@@ -16,6 +16,11 @@ RUN cd apps/frontend && npm run build
 
 # --- Production Image ---
 FROM node:20-alpine
+WORKDIR /app
+
+# Copy root node_modules so that hoisted dependencies are available
+COPY --from=builder /app/node_modules ./node_modules
+
 WORKDIR /app/apps/frontend
 
 # Copy only what's needed to run in production
