@@ -1,8 +1,8 @@
 import Redis from "ioredis"
 
 const redis  = new Redis({
-    host: "localhost",
-    port: 6378
+    host: process.env.REDIS_HOST || "localhost",
+    port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6378
 })
 
 // Validate Redis connection

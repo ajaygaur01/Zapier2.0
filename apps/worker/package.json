@@ -14,8 +14,10 @@
     "tsx": "^4.0.0"
   },
   "dependencies": {
+    "@repo/db": "*",
     "dotenv": "^16.6.1",
     "ioredis": "^5.10.1",
+    "kafkajs": "^2.2.4",
     "nodemailer": "^8.0.5",
     "resend": "^1.0.0"
   }
