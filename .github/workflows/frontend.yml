@@ -1,0 +1,14 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/frontend/**'
+
+jobs:
+  frontend:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: frontend
+      path: apps/frontend
+    secrets: inherit

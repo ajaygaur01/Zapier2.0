@@ -1,0 +1,15 @@
+name: Worker CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/worker/**'
+      - 'packages/db/**'
+
+jobs:
+  worker:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: worker
+      path: apps/worker
+    secrets: inherit

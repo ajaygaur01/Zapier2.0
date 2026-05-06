@@ -1,0 +1,32 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      path:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u "ajaygaur0103" --password-stdin
+
+      - name: Build Image
+        run: |
+          docker build \
+            -t "ajaygaur0103/${{ inputs.service }}:latest" \
+            -f "${{ inputs.path }}/Dockerfile" \
+            .
+
+      - name: Push Image
+        run: |
+          docker push "ajaygaur0103/${{ inputs.service }}:latest"

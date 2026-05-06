@@ -1,0 +1,15 @@
+name: Hooks CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/hooks/**'
+      - 'packages/db/**'
+
+jobs:
+  hooks:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: hooks
+      path: apps/hooks
+    secrets: inherit

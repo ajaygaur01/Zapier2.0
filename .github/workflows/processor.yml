@@ -1,0 +1,15 @@
+name: Processor CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/processor/**'
+      - 'packages/db/**'
+
+jobs:
+  processor:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: processor
+      path: apps/processor
+    secrets: inherit

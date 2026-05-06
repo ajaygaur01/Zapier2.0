@@ -1,0 +1,15 @@
+name: Scheduler CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/scheduler/**'
+      - 'packages/db/**'
+
+jobs:
+  scheduler:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: scheduler
+      path: apps/scheduler
+    secrets: inherit

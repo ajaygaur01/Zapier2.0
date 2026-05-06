@@ -1,0 +1,15 @@
+name: Notification CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/services/**'
+      - 'packages/db/**'
+
+jobs:
+  notification:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: notification-service
+      path: apps/services
+    secrets: inherit

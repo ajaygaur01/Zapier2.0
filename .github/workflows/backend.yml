@@ -1,0 +1,15 @@
+name: Backend CI/CD
+
+on:
+  push:
+    paths:
+      - 'apps/primary-backend/**'
+      - 'packages/db/**'
+
+jobs:
+  backend:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      service: primarybackend
+      path: apps/primarybackend
+    secrets: inherit
