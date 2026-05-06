@@ -6,7 +6,7 @@ This project implements a Zapier-like automation platform using an advanced micr
 
 ## System Architecture
 
-```text
+``text
 ┌─────────────┐
 │   Frontend  │ (Next.js)
 │  (Port 3001)│
