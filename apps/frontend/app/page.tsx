@@ -1,4 +1,5 @@
 "use client";
+// CI/CD Test Change
 
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Toaster } from "react-hot-toast";
