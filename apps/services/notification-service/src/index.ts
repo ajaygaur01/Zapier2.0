@@ -1,5 +1,5 @@
 import "dotenv/config"
-import {WebSocketServer , WebSocket} from "ws"
+import { WebSocketServer, WebSocket } from "ws";
 import Redis from "ioredis"
 
 const PORT = Number(process.env.PORT) || 9000;
@@ -56,7 +56,7 @@ ws.on("close" , () => {
 // Redis subscriber
 const subscriber = new Redis({
     host: process.env.REDIS_HOST || "localhost",
-    port: 6379
+    port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379
 });
 
 // subscribe to the channel worker publishes to
