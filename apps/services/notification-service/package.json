@@ -1,7 +1,6 @@
 {
   "name": "@repo/notification-service",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
       "build": "tsc --project tsconfig.json --outDir dist",
       "dev": "npm run build && node dist/index.js",
