@@ -2,6 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hooks-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
 spec:
   selector:
     app: hooks
