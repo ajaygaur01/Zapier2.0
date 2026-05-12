@@ -27,8 +27,8 @@ jobs:
         with:
           projectBaseDir: ${{ inputs.path }}
           args: >
-            -Dsonar.projectKey=ajaygaur0103_Zapier2.0_${{ inputs.service }}
-            -Dsonar.organization=ajaygaur0103
+            -Dsonar.projectKey=ajaygaur01_Zapier2.0_${{ inputs.service }}
+            -Dsonar.organization=ajaygaur01
 
       - name: Trivy FS Scan
         uses: aquasecurity/trivy-action@master
