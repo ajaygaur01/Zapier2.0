@@ -1,7 +1,10 @@
 kubelet:
+  enabled: true
   serviceMonitor:
     https: true
     insecureSkipVerify: true
+    cAdvisor: true
+    resource: true
 
 prometheus:
   prometheusSpec:
