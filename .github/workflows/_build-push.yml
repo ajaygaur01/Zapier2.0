@@ -19,6 +19,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create Sonar Properties
+        run: |
+          echo "sonar.projectKey=ajaygaur01_Zapier2.0_${{ inputs.service }}" > ${{ inputs.path }}/sonar-project.properties
+          echo "sonar.organization=ajaygaur01" >> ${{ inputs.path }}/sonar-project.properties
+          echo "sonar.sources=." >> ${{ inputs.path }}/sonar-project.properties
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v4
         env:
@@ -26,7 +32,6 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: ${{ inputs.path }}
-          args: -Dsonar.projectKey=ajaygaur01_Zapier2.0_${{ inputs.service }} -Dsonar.organization=ajaygaur01
 
       - name: Trivy FS Scan
         uses: aquasecurity/trivy-action@master
