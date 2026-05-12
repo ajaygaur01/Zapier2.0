@@ -26,6 +26,9 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: ${{ inputs.path }}
+          args: >
+            -Dsonar.projectKey=ajaygaur0103_Zapier2.0_${{ inputs.service }}
+            -Dsonar.organization=ajaygaur0103
 
       - name: Trivy FS Scan
         uses: aquasecurity/trivy-action@master
