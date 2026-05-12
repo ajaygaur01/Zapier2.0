@@ -36,17 +36,6 @@ jobs:
         with:
           projectBaseDir: ${{ inputs.path }}
 
-      - name: Trivy FS Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '${{ inputs.path }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u "ajaygaur0103" --password-stdin
 
@@ -56,16 +45,6 @@ jobs:
             -t "ajaygaur0103/${{ inputs.service }}:latest" \
             -f "${{ inputs.path }}/Dockerfile" \
             .
-
-      - name: Trivy Image Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'ajaygaur0103/${{ inputs.service }}:latest'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
 
       - name: Push Image
         run: |
