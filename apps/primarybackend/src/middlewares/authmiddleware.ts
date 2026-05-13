@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-
+//test
 const jwtsecret = process.env.JWT_SECRET || "vatikabahutsundarhai";
 
 if (!jwtsecret) {
