@@ -1,7 +1,7 @@
-// apps/frontend/src/api/auth.ts
 import axios from "axios";
+import { BACKEND_URL } from "../app/config";
 
-const API_URL = "http://localhost:3000";
+const API_URL = BACKEND_URL;
 
 export const api = axios.create({
     baseURL: API_URL,
