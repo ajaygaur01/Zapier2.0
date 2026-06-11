@@ -56,7 +56,7 @@ resource "kubernetes_deployment" "deployment" {
           }
 
           dynamic "env_from" {
-            for_each = length(var.env_config) > 0 ? toset(["config"]) : toset([])
+            for_each = length(var.env_config) > 0 ? ["config"] : []
             content {
               config_map_ref {
                 name = kubernetes_config_map.config[0].metadata[0].name
@@ -65,7 +65,7 @@ resource "kubernetes_deployment" "deployment" {
           }
 
           dynamic "env_from" {
-            for_each = length(var.env_secret) > 0 ? toset(["secret"]) : toset([])
+            for_each = length(nonsensitive(var.env_secret)) > 0 ? ["secret"] : []
             content {
               secret_ref {
                 name = kubernetes_secret.secret[0].metadata[0].name
