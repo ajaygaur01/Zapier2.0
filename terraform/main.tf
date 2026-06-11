@@ -69,7 +69,7 @@ resource "kubernetes_stateful_set" "postgres" {
       }
 
       spec {
-        access_modes       = ["ReadWriteOnce"]
+        access_modes = ["ReadWriteOnce"]
         resources {
           requests = {
             storage = "5Gi"
@@ -154,7 +154,7 @@ resource "kubernetes_stateful_set" "redis" {
       }
 
       spec {
-        access_modes       = ["ReadWriteOnce"]
+        access_modes = ["ReadWriteOnce"]
         resources {
           requests = {
             storage = "1Gi"
@@ -578,4 +578,35 @@ resource "helm_release" "prometheus_stack" {
   values = [
     file("${path.module}/../k8/monitoringk8/values.yaml")
   ]
+}
+
+
+
+
+
+
+# Create a dedicated namespace for ArgoCD
+resource "kubernetes_namespace" "argocd" {
+  metadata {
+    name = "argocd"
+  }
+}
+
+# Install ArgoCD via Helm
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  version    = "5.52.0"
+
+  # Optimize resource configurations for local Minikube (saves memory)
+  set {
+    name  = "controller.resources.limits.cpu"
+    value = "500m"
+  }
+  set {
+    name  = "controller.resources.limits.memory"
+    value = "512Mi"
+  }
 }
