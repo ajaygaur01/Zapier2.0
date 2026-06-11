@@ -599,6 +599,7 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   version    = "5.52.0"
+  timeout    = 900
 
   # Optimize resource configurations for local Minikube (saves memory)
   set {
