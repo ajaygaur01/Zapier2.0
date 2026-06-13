@@ -1,9 +1,24 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: frontend-deployment
+  namespace: zapier
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    canary:
+      activeService: frontend-active
+      canaryService: frontend-canary
+      trafficRouting:
+        nginx:
+          stableIngress: zapier-ingress
+      steps:
+        - setWeight: 10
+          pause: { duration: 2m }
+        - setWeight: 30
+          pause: { duration: 5m }
+        - setWeight: 50
+          pause: {} # Pause indefinitely until manually promoted
   selector:
     matchLabels:
       app: frontend
@@ -28,3 +43,4 @@ spec:
           limits:
             cpu: "500m"
             memory: "512Mi"
+

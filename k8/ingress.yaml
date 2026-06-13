@@ -29,6 +29,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: frontend-service
+            name: frontend-active
             port:
               number: 3001
