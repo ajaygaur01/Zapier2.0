@@ -14,11 +14,11 @@ spec:
           stableIngress: zapier-ingress
       steps:
         - setWeight: 10
-          pause: { duration: 2m }
+        - pause: { duration: 2m }
         - setWeight: 30
-          pause: { duration: 5m }
+        - pause: { duration: 5m }
         - setWeight: 50
-          pause: {} # Pause indefinitely until manually promoted
+        - pause: {} # Pause indefinitely until manually promoted
   selector:
     matchLabels:
       app: frontend
