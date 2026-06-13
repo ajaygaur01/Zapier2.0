@@ -155,3 +155,47 @@ The system implements a robust fault tolerance mechanism using Kafka to handle i
 2. Back in the void, the `Worker` processes an outbox, eventually ending up with a `success` state. It shoots a lightweight Pub/Sub hit to Redis `zap-notification` queue.
 3. The WebSocket server (subscribed solely to that channel) detects the specific `userId` payload matches an open connection map in its internal runtime heap. 
 4. The React front-end instantaneously updates using raw socket transmission, bypassing complex API round trips, giving users a highly premium live feedback loop.
+
+---
+
+## DevOps & Infrastructure Architecture
+
+This project adopts modern, cloud-native DevOps principles to automate provisioning, testing, deployment, and monitoring.
+
+### 1. Infrastructure as Code (IaC) & Stateful Apps
+* **Tool**: Terraform
+* **Implementation**: Declarative management of baseline cluster namespaces (`zapier`, `argocd`, `argo-rollouts`), helm releases, and persistent databases.
+* **Stateful Set Specifications**:
+  * **PostgreSQL StatefulSet**: Configured with a `volumeClaimTemplates` requesting **5Gi** storage mounted at `/var/lib/postgresql/data` with a `ReadWriteOnce` access mode.
+  * **Redis StatefulSet**: Configured with a `volumeClaimTemplates` requesting **1Gi** storage mounted at `/data` with a `ReadWriteOnce` access mode.
+  * Stable network identifiers (`postgres-0`, `redis-0`) ensure deterministic internal DNS resolution.
+* **Modularity**: Implements a custom local Terraform module (`./modules/microservice`) to stamp out uniform configurations for all 7 microservices, managing environment variables, secrets, service endpoints, and Prometheus annotations dynamically.
+
+### 2. GitOps Continuous Delivery (CD)
+* **Tool**: ArgoCD
+* **Implementation**: The application is managed under GitOps patterns. ArgoCD watches the `/k8` directory on Git and recursively synchronizes nested directory manifests with the active Kubernetes cluster (`minikube`/`docker-desktop`).
+* **Controls**: Implements automated drift detection and self-healing to overwrite any manual, out-of-band modifications made to the cluster.
+
+### 3. Progressive Delivery (Canary Deployments)
+* **Tool**: Argo Rollouts & NGINX Ingress
+* **Implementation**: The `frontend` service is deployed via the custom `Rollout` CRD. It splits incoming ingress traffic dynamically between two services (`frontend-active` stable and `frontend-canary` preview/canary endpoints).
+* **Rollout Steps**:
+  1. Set weight to **10%** traffic and pause for **2 minutes**.
+  2. Increase weight to **30%** traffic and pause for **5 minutes**.
+  3. Increase weight to **50%** traffic and **pause indefinitely** for manual promotion (`kubectl argo rollouts promote`).
+
+### 4. Event-Driven Messaging Infrastructure
+* **Tool**: Strimzi Kafka Operator
+* **Implementation**: Deploys a KRaft-enabled Kafka cluster (`zapier-kafka`) inside the Kubernetes cluster using Strimzi Custom Resource Definitions:
+  * **`KafkaNodePool`**: Manages a pool of broker/controller nodes with ephemeral storage.
+  * **`Kafka`**: Configures broker settings, security parameters, and listener ports (plain port `9092` for internal service-to-service communication).
+  * **`KafkaTopic`**: Declaratively creates `zap-events` (3 partitions, retention `604800000ms`) and `zap-events-dlq` (3 partitions, retention `604800000ms`).
+
+### 5. Continuous Integration (CI)
+* **Tool**: GitHub Actions
+* **Implementation**: Independent workflows in `.github/workflows/` trigger on pushes to build Docker images for each microservice and publish them to Docker Hub. Paths-based triggers are utilized to ensure only modified services trigger their respective pipelines.
+
+### 6. Observability & Monitoring
+* **Tool**: Prometheus Stack & Grafana
+* **Implementation**: Provisioned via `helm_release.prometheus_stack` in Terraform. Microservice endpoints expose metrics ports, annotated with `prometheus.io/scrape` and `prometheus.io/port` so the Prometheus controller automatically scrapes telemetry.
+* **Traffic Ingress**: Leverages path-based routing in the NGINX Ingress controller (`/api` routed to backend, `/hooks` routed to hook ingestion, `/` routed to frontend).
