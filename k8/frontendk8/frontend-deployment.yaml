@@ -7,7 +7,7 @@ spec:
   replicas: 2
   strategy:
     canary:
-      activeService: frontend-active
+      stableService: frontend-active
       canaryService: frontend-canary
       trafficRouting:
         nginx:
