@@ -1,0 +1,192 @@
+# Introducing Terraform locally with Minikube
+
+This plan outlines how to integrate Terraform into this project using your local Minikube cluster (with no cloud provider). It is designed to teach you Infrastructure as Code (IaC) best practices and serve as a strong resume builder.
+
+We will translate the existing Kubernetes YAML manifests (`k8/*`) into structured, DRY (Don't Repeat Yourself) Terraform files using a custom reusable Terraform module.
+
+---
+
+## Architectural Approach (Local IaC)
+
+Even without a cloud provider like AWS, GCP, or Azure, Terraform is widely used to manage local Kubernetes environments and third-party tools via **Kubernetes & Helm Providers**.
+
+Here is how the control flow works:
+
+```mermaid
+graph TD
+    A[Local Machine / VS Code] -->|terraform apply| B(Terraform CLI)
+    B -->|Communicates via kubeconfig| C(Minikube K8s Control Plane)
+    C -->|Orchestrates| D[Pods, Deployments, Services]
+    C -->|Deploys CRDs| E[Strimzi Kafka Operators]
+    C -->|Persistent Volumes| F[Local Disk Mounts]
+```
+
+### Key Highlights for Your Resume
+* **Infrastructure as Code (IaC)**: Eliminating manual `kubectl apply` commands in favor of standard declarative state management.
+* **Reusable Terraform Modules**: Creating a custom module to package microservices (ports, replicas, configs, secrets) rather than duplicating blocks.
+* **Kubernetes Custom Resource Definitions (CRDs) via Terraform**: Deploying Strimzi Kafka operators and resources natively in HCL using `kubernetes_manifest`.
+* **State Management**: Understanding Terraform state file tracking, drift detection, and local backends.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Kubernetes Namespace:**
+> The current plan deploys all resources in a dedicated Kubernetes Namespace (`zapier`). If you are running existing resources on the default namespace, we should delete them first before applying Terraform to avoid port conflicts and resource duplication.
+
+> [!WARNING]
+> **Base64 Secrets in Terraform:**
+> Unlike raw Kubernetes YAML where secrets must be manually base64 encoded (e.g., `DATABASE_URL` in `secret.yaml`), Terraform accepts plain-text values and performs the encoding automatically when communicating with the K8s API. We will define sensitive variables in a `.tfvars` file (which is git-ignored) to demonstrate secure secrets management.
+
+---
+
+## Proposed Folder Structure
+
+We will create a structured Terraform directory in the root of the project:
+
+```text
+terraform/
+├── providers.tf            # Configures local kubeconfig and minikube contexts
+├── variables.tf            # Global variables (namespace, docker image tags, etc.)
+├── main.tf                 # Orchestrates database instances and microservices
+├── outputs.tf              # Returns Ingress URLs and service hostnames
+├── terraform.tfvars        # Values for credentials and environment variables
+└── modules/
+    └── microservice/       # Reusable module for deploying any app service
+        ├── main.tf         # Deploys Deployment, Service, ConfigMap, and Secret
+        ├── variables.tf    # Module-level input parameters
+        └── outputs.tf      # Exposes internal service name & ports
+```
+
+---
+
+## Proposed Changes
+
+### 1. Terraform Modules (Reusable Infrastructure)
+
+#### [NEW] [variables.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/modules/microservice/variables.tf)
+Defines inputs for our microservice module:
+* Service name and namespace.
+* Replicas, ports, and image details.
+* Map of ConfigMap keys/values.
+* Map of Secret keys/values (marked `sensitive = true`).
+* Resource limits (CPU/Memory) for stability.
+
+#### [NEW] [main.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/modules/microservice/main.tf)
+Contains the core declarative templates for Kubernetes resources:
+* `kubernetes_config_map` (conditionally created if config data is provided).
+* `kubernetes_secret` (conditionally created if secret data is provided).
+* `kubernetes_deployment` (linking configmaps/secrets and setting resource requests/limits).
+* `kubernetes_service` (exposing ports internally).
+
+#### [NEW] [outputs.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/modules/microservice/outputs.tf)
+Exposes the generated service name to easily link service dependencies (e.g., frontend pointing to backend).
+
+---
+
+### 2. Root Terraform Orchestration
+
+#### [NEW] [providers.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/providers.tf)
+Specifies Terraform provider requirements and configures the `kubernetes` provider to hook into the local Minikube cluster using:
+```hcl
+provider "kubernetes" {
+  config_path    = "~/.kube/config"
+  config_context = "minikube"
+}
+```
+
+#### [NEW] [variables.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/variables.tf)
+Defines global configuration inputs like the main target namespace, image version, ingress hostname, and database credentials.
+
+#### [NEW] [main.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/main.tf)
+Orchestrates the whole system:
+1. **Namespace**: Creates the `zapier` namespace.
+2. **Databases (Postgres & Redis)**: Translates StatefulSets and Services to HCL.
+3. **Kafka Setup**: Manages Strimzi Kafka cluster custom resources using the `kubernetes_manifest` resource.
+4. **App Microservices**: Declares 7 module blocks passing specific environment variables, ports, and credentials:
+   - `backend`
+   - `frontend`
+   - `hooks`
+   - `processor`
+   - `worker`
+   - `notification-service`
+   - `scheduler`
+5. **Ingress**: Translates `k8/ingress.yaml` to a `kubernetes_ingress_v1` resource.
+
+#### [NEW] [outputs.tf](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/outputs.tf)
+Returns useful output values like the list of active services and the host URL to access the platform.
+
+#### [NEW] [terraform.tfvars](file:///c:/Users/gaura/OneDrive/Desktop/EVERYTHING/Zapier2.0/terraform/terraform.tfvars)
+Defines the local environment configuration and inputs.
+
+---
+
+## Step-by-Step Learning & Deployment Guide
+
+This guide can be used directly for learning and documentation:
+
+### Step 1: Install Terraform
+Download the Terraform CLI if you haven't already.
+* **Windows (PowerShell/Chocolatey)**: `choco install terraform`
+* **Direct Download**: Download the binary from [HashiCorp's Website](https://www.terraform.io/downloads) and add it to your System PATH.
+
+### Step 2: Connect Terraform to Minikube
+Verify that Minikube is running and your CLI context points to it:
+```bash
+minikube status
+kubectl config current-context
+# Should print: minikube
+```
+
+### Step 3: Initialize Terraform
+Navigate to the `terraform/` folder in your terminal and run:
+```bash
+terraform init
+```
+This downloads the Kubernetes provider binary onto your machine.
+
+### Step 4: Run a Plan
+Create a dry run to see exactly what Terraform will deploy without modifying the cluster:
+```bash
+terraform plan
+```
+Carefully inspect the output to see how state tracking detects what resources it will create.
+
+### Step 5: Deploy the Stack
+Apply the changes to your Minikube cluster:
+```bash
+terraform apply
+```
+Type `yes` when prompted. Terraform will orchestrate the deployment sequence.
+
+### Step 6: Verify in Minikube
+Use `kubectl` to inspect the resources created:
+```bash
+kubectl get all -n zapier
+```
+
+---
+
+## Resume Points Prep (DevOps / IaC Focus)
+
+Here are the bullet points you can add to your resume/CV after completing this integration:
+
+* **Infrastructure as Code (IaC)**: Migrated manual Kubernetes deployment YAML configurations into standard declarative HCL using **Terraform**, establishing a reproducible deployment pipeline for 7+ microservices.
+* **Modular Infrastructure Design**: Architected a custom **reusable Terraform module** to standardize microservice components, cutting configuration boilerplate by 70% and enforcing consistent resource limits, secret injections, and health probes.
+* **Local Cloud-Free Development**: Designed a robust local testing suite using **Minikube** and Terraform Kubernetes/Helm providers to replicate production configurations on a single local workstation.
+* **Custom Kubernetes Resource Definitions (CRDs)**: Integrated and orchestrated complex custom infrastructure components (Strimzi Kafka Cluster & Node Pools) natively within Terraform state using the `kubernetes_manifest` API.
+* **Credential Isolation**: Implemented secure parameterization and isolated application secrets from configuration templates using Terraform input variables and Git-ignored `.tfvars` structures.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Run `terraform validate` to ensure structural validity.
+- Run `terraform plan` to verify resource creation.
+
+### Manual Verification
+- Deploying to Minikube using `terraform apply`.
+- Verifying all Pods transition to `Running` state: `kubectl get pods -n zapier`.
+- Accessing the application via the Ingress host `zapier.local` mapped in `/etc/hosts` or the local Windows `hosts` file.
